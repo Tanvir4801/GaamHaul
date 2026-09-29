@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_package/shared_package.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../request_form_controller.dart';
+import '../widgets/duration_fare_card.dart';
+import '../../../../core/theme/customer_theme.dart';
 
 class DurationStep extends ConsumerStatefulWidget {
   const DurationStep({super.key});
@@ -23,53 +26,55 @@ class _DurationStepState extends ConsumerState<DurationStep> {
   Widget build(BuildContext context) {
     final state = ref.watch(requestFormControllerProvider);
     final controller = ref.read(requestFormControllerProvider.notifier);
+    final l10n = AppLocalizations.of(context)!;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text('For how long?', style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 16),
-        Expanded(
-          child: ListView.builder(
-            itemCount: DurationType.values.length,
-            itemBuilder: (context, index) {
-              final type = DurationType.values[index];
-              final isSelected = state.durationType == type;
-
-              return Card(
-                color: isSelected ? Theme.of(context).colorScheme.primaryContainer : null,
-                child: Column(
-                  children: [
-                    ListTile(
-                      title: Text(
-                        type.value.toUpperCase(),
-                        style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal),
-                      ),
-                      onTap: () {
-                        controller.setDuration(type, customText: type == DurationType.custom ? _customController.text : null);
-                      },
-                    ),
-                    if (isSelected && type == DurationType.custom)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                        child: TextField(
-                          controller: _customController,
-                          decoration: const InputDecoration(
-                            labelText: 'Describe duration (e.g. 3 days)',
-                            border: OutlineInputBorder(),
-                          ),
-                          onChanged: (val) {
-                            controller.setDuration(type, customText: val);
-                          },
-                        ),
-                      )
-                  ],
-                ),
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(l10n.stepDurationTitle, style: CustomerTextStyles.headlineLg),
+          const SizedBox(height: GhTokens.spaceLg),
+          ...DurationType.values.map((type) {
+            final isSelected = state.durationType == type;
+            
+            PriceRange? estimate;
+            if (state.vehicleType != null) {
+              estimate = RateCardCalculator.calculateEstimatedPrice(
+                vehicleType: state.vehicleType!,
+                durationType: type,
               );
-            },
-          ),
-        ),
-      ],
+            }
+
+            return DurationFareCard(
+              durationType: type,
+              estimatedPrice: estimate,
+              isSelected: isSelected,
+              onTap: () {
+                controller.setDuration(type, customText: type == DurationType.custom ? _customController.text : null);
+              },
+              child: (isSelected && type == DurationType.custom) ? TextField(
+                controller: _customController,
+                style: CustomerTextStyles.bodyMd.copyWith(color: CustomerColors.onPrimary),
+                decoration: InputDecoration(
+                  labelText: 'Describe duration (e.g. 3 days)',
+                  labelStyle: CustomerTextStyles.bodyMd.copyWith(color: CustomerColors.onPrimary.withValues(alpha: 0.8)),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(GhTokens.radiusSm),
+                    borderSide: BorderSide(color: CustomerColors.onPrimary.withValues(alpha: 0.5)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(GhTokens.radiusSm),
+                    borderSide: const BorderSide(color: CustomerColors.onPrimary),
+                  ),
+                ),
+                onChanged: (val) {
+                  controller.setDuration(type, customText: val);
+                },
+              ) : null,
+            );
+          }),
+        ],
+      ),
     );
   }
 }

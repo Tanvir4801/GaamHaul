@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_package/shared_package.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../../core/theme/customer_theme.dart';
-import '../../../../widgets/gh_request_card.dart';
 import '../request_form_controller.dart';
+import '../widgets/booking_summary_card.dart';
 
 class ReviewStep extends ConsumerWidget {
   const ReviewStep({super.key});
@@ -12,95 +13,101 @@ class ReviewStep extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(requestFormControllerProvider);
     final controller = ref.read(requestFormControllerProvider.notifier);
+    final l10n = AppLocalizations.of(context)!;
     
     final priceRange = controller.getEstimatedPrice();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        Text(l10n.stepReviewTitle, style: CustomerTextStyles.headlineLg),
+        const SizedBox(height: GhTokens.spaceLg),
+        
         Expanded(
-          child: ListView(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: CustomerColors.surfaceContainerLowest,
-                  borderRadius: BorderRadius.circular(GhTokens.radiusLg),
-                  border: Border.all(color: CustomerColors.outlineVariant),
-                ),
-                child: Column(
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.local_shipping, color: CustomerColors.onSurfaceVariant),
-                      title: Text('Vehicle', style: CustomerTextStyles.bodySm.copyWith(color: CustomerColors.onSurfaceVariant)),
-                      subtitle: Text(state.vehicleType?.value.toUpperCase() ?? '', style: CustomerTextStyles.titleMd),
-                    ),
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: const Icon(Icons.work, color: CustomerColors.onSurfaceVariant),
-                      title: Text('Work', style: CustomerTextStyles.bodySm.copyWith(color: CustomerColors.onSurfaceVariant)),
-                      subtitle: Text(state.workType?.value.toUpperCase() ?? '', style: CustomerTextStyles.titleMd),
-                    ),
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: const Icon(Icons.access_time, color: CustomerColors.onSurfaceVariant),
-                      title: Text('Timing', style: CustomerTextStyles.bodySm.copyWith(color: CustomerColors.onSurfaceVariant)),
-                      subtitle: Text(state.timing?.value.toUpperCase() ?? '', style: CustomerTextStyles.titleMd),
-                    ),
-                    if (state.timing == RequestTiming.scheduled) ...[
-                      const Divider(height: 1),
-                      ListTile(
-                        leading: const Icon(Icons.event, color: CustomerColors.onSurfaceVariant),
-                        title: Text('Scheduled Time', style: CustomerTextStyles.bodySm.copyWith(color: CustomerColors.onSurfaceVariant)),
-                        subtitle: Text(state.scheduledAt?.toString() ?? '', style: CustomerTextStyles.titleMd),
-                      ),
-                    ],
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: const Icon(Icons.timer, color: CustomerColors.onSurfaceVariant),
-                      title: Text('Duration', style: CustomerTextStyles.bodySm.copyWith(color: CustomerColors.onSurfaceVariant)),
-                      subtitle: Text(state.durationType?.value.toUpperCase() ?? '', style: CustomerTextStyles.titleMd),
-                    ),
-                    if (state.pickupLocation != null) ...[
-                      const Divider(height: 1),
-                      ListTile(
-                        leading: const Icon(Icons.location_on, color: CustomerColors.onSurfaceVariant),
-                        title: Text('Pickup Location', style: CustomerTextStyles.bodySm.copyWith(color: CustomerColors.onSurfaceVariant)),
-                        subtitle: Text('${state.pickupLocation!.latitude.toStringAsFixed(3)}, ${state.pickupLocation!.longitude.toStringAsFixed(3)}', style: CustomerTextStyles.titleMd),
-                      ),
-                    ]
-                  ],
-                ),
+          child: SingleChildScrollView(
+            child: Container(
+              padding: const EdgeInsets.all(GhTokens.spaceLg),
+              decoration: BoxDecoration(
+                color: CustomerColors.surfaceContainerLowest,
+                borderRadius: BorderRadius.circular(GhTokens.radiusXl),
+                border: Border.all(color: CustomerColors.outlineVariant),
+                boxShadow: GhTokens.shadowCardCustomer,
               ),
-              const SizedBox(height: GhTokens.spaceXl),
-              
-              if (priceRange != null) ...[
-                GhFareBanner(
-                  priceRange: priceRange,
-                ),
-                const SizedBox(height: GhTokens.spaceMd),
-                Text(
-                  'Final price is confirmed with the Vahan Saathi after selection.',
-                  textAlign: TextAlign.center,
-                  style: CustomerTextStyles.bodySm.copyWith(
-                    color: CustomerColors.onSurfaceVariant,
-                    fontStyle: FontStyle.italic,
+              child: Column(
+                children: [
+                  BookingSummaryCard(
+                    title: 'VEHICLE',
+                    value: state.vehicleType?.name.toUpperCase() ?? '',
+                    onEdit: () => controller.jumpToStep(0),
                   ),
-                ),
-              ] else ...[
-                 Container(
-                   padding: const EdgeInsets.all(GhTokens.spaceMd),
-                   decoration: BoxDecoration(
-                     color: CustomerColors.error.withValues(alpha: 0.1),
-                     borderRadius: BorderRadius.circular(GhTokens.radiusMd),
-                   ),
-                   child: Text(
-                    'Estimated price unavailable. Please complete all selections.',
-                    textAlign: TextAlign.center,
-                    style: CustomerTextStyles.bodyMd.copyWith(color: CustomerColors.error),
+                  BookingSummaryCard(
+                    title: 'WORK',
+                    value: state.workType?.name.toUpperCase() ?? '',
+                    onEdit: () => controller.jumpToStep(1),
                   ),
-                 ),
-              ]
-            ],
+                  BookingSummaryCard(
+                    title: 'PICKUP',
+                    value: state.pickupLocation != null 
+                        ? '${state.pickupLocation!.latitude.toStringAsFixed(3)}, ${state.pickupLocation!.longitude.toStringAsFixed(3)}'
+                        : 'Location',
+                    onEdit: () => controller.jumpToStep(2),
+                  ),
+                  BookingSummaryCard(
+                    title: 'WHEN',
+                    value: state.timing == RequestTiming.now ? 'Today' : 'Scheduled',
+                    subtitle: state.scheduledAt != null ? '${state.scheduledAt!.day}/${state.scheduledAt!.month}/${state.scheduledAt!.year} at ${state.scheduledAt!.hour}:${state.scheduledAt!.minute.toString().padLeft(2, '0')}' : null,
+                    onEdit: () => controller.jumpToStep(3),
+                  ),
+                  BookingSummaryCard(
+                    title: 'DURATION',
+                    value: state.durationType?.name.toUpperCase() ?? '',
+                    onEdit: () => controller.jumpToStep(4),
+                  ),
+                  
+                  const SizedBox(height: GhTokens.spaceMd),
+                  if (priceRange != null) ...[
+                    Container(
+                      padding: const EdgeInsets.all(GhTokens.spaceMd),
+                      decoration: BoxDecoration(
+                        color: CustomerColors.primaryContainer.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(GhTokens.radiusMd),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(l10n.estimatedFare, style: CustomerTextStyles.labelMd.copyWith(color: CustomerColors.onSurfaceVariant)),
+                          const SizedBox(height: GhTokens.spaceXs),
+                          Text(
+                            '₹${priceRange.min} – ₹${priceRange.max}',
+                            style: CustomerTextStyles.headlineLg.copyWith(color: CustomerColors.primaryContainer),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: GhTokens.spaceMd),
+                    Text(
+                      l10n.fareDisclaimer,
+                      textAlign: TextAlign.center,
+                      style: CustomerTextStyles.bodySm.copyWith(
+                        color: CustomerColors.onSurfaceVariant,
+                      ),
+                    ),
+                  ] else ...[
+                     Container(
+                       padding: const EdgeInsets.all(GhTokens.spaceMd),
+                       decoration: BoxDecoration(
+                         color: CustomerColors.error.withValues(alpha: 0.1),
+                         borderRadius: BorderRadius.circular(GhTokens.radiusMd),
+                       ),
+                       child: Text(
+                        'Estimated price unavailable. Please complete all selections.',
+                        textAlign: TextAlign.center,
+                        style: CustomerTextStyles.bodyMd.copyWith(color: CustomerColors.error),
+                      ),
+                     ),
+                  ]
+                ],
+              ),
+            ),
           ),
         ),
       ],

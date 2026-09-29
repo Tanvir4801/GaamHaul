@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_package/shared_package.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../../../core/theme/customer_theme.dart';
 import '../../../widgets/gh_buttons.dart';
@@ -100,7 +101,7 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
 
             // ── Primary Hire Vehicle CTA ───────────────────────────────────
             GhHighlightButton(
-              label: 'REQUEST A VEHICLE',
+              label: AppLocalizations.of(context)!.bookVehicleCta,
               icon: Icons.local_shipping,
               onPressed: () => _startRequestFlow(context, ref),
             ),

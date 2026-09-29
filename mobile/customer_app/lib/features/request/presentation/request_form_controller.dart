@@ -67,7 +67,13 @@ class RequestFormController extends Notifier<RequestFormState> {
           return false;
         }
         break;
-      case 2: // Timing
+      case 2: // Location
+        if (state.pickupLocation == null) {
+          state = state.copyWith(errorMessage: 'Please select a pickup location.');
+          return false;
+        }
+        break;
+      case 3: // Timing
         if (state.timing == null) {
           state = state.copyWith(errorMessage: 'Please select timing.');
           return false;
@@ -83,15 +89,9 @@ class RequestFormController extends Notifier<RequestFormState> {
           }
         }
         break;
-      case 3: // Duration
+      case 4: // Duration
         if (state.durationType == null) {
           state = state.copyWith(errorMessage: 'Please select a duration.');
-          return false;
-        }
-        break;
-      case 4: // Location
-        if (state.pickupLocation == null) {
-          state = state.copyWith(errorMessage: 'Please select a pickup location.');
           return false;
         }
         break;
@@ -164,6 +164,12 @@ class RequestFormController extends Notifier<RequestFormState> {
         isSubmitting: false,
         errorMessage: 'Failed to submit request. Please try again.',
       );
+    }
+  }
+
+  void jumpToStep(int step) {
+    if (step >= 0 && step <= 5) {
+      state = state.clearError().copyWith(currentStep: step);
     }
   }
 

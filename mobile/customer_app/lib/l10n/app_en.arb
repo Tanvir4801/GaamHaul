@@ -1,26 +1,50 @@
 {
   "appTitle": "GAAMHAUL",
-  "@appTitle": {
-    "description": "The main brand name of the application"
-  },
   "customerAppSubtitle": "વાહન સાથી",
-  "@customerAppSubtitle": {
-    "description": "Subtitle shown alongside the brand name"
-  },
   "logout": "Logout",
-  "@logout": {
-    "description": "Text for the logout button"
-  },
   "language": "Language",
-  "@language": {
-    "description": "Label for the language selection setting"
-  },
   "english": "English",
-  "@english": {
-    "description": "The name of the English language"
-  },
   "gujarati": "ગુજરાતી",
-  "@gujarati": {
-    "description": "The name of the Gujarati language"
-  }
+  "bookVehicleCta": "Book a Vehicle",
+  "bookVehicleSub": "Fast and reliable local transport",
+  "stepVehicleTitle": "What do you need?",
+  "stepVehicleSub": "Select the best vehicle for your haul",
+  "stepWorkTitle": "What are you using the vehicle for?",
+  "stepWorkSub": "Helps us match you with the right Saathi",
+  "stepPickupTitle": "Where should we pick it up?",
+  "stepDropTitle": "Where should we take it?",
+  "stepWhenTitle": "When do you need the vehicle?",
+  "stepDurationTitle": "How long do you need it?",
+  "stepReviewTitle": "Review your haul",
+  "actionContinue": "Continue",
+  "actionBack": "Back",
+  "actionFindVehicle": "Find My Vehicle",
+  "vehiclePickupName": "Pickup",
+  "vehiclePickupDesc": "Good for construction materials, farm goods and shop deliveries",
+  "vehicleMiniTruckName": "Mini Truck",
+  "vehicleMiniTruckDesc": "Perfect for small to medium shifting and goods transport",
+  "vehicleTempoName": "Tempo",
+  "vehicleTempoDesc": "Ideal for fast local deliveries and small items",
+  "vehicleELoaderName": "E-Loader",
+  "vehicleELoaderDesc": "Eco-friendly transport for narrow village roads",
+  "vehicleTractorName": "Tractor",
+  "vehicleTractorDesc": "Heavy-duty power for farm work and heavy materials",
+  "workFarm": "Farm",
+  "workNursery": "Nursery",
+  "workConstruction": "Construction",
+  "workShifting": "Shifting",
+  "workShop": "Shop",
+  "workOther": "Other",
+  "durationOneHour": "1 Hour",
+  "durationTwoHours": "2 Hours",
+  "durationHalfDay": "Half Day",
+  "durationFullDay": "Full Day",
+  "estimatedFare": "ESTIMATED FARE",
+  "fareDisclaimer": "Final price may vary based on the actual work and agreement with the Saathi.",
+  "findingSaathiTitle": "Finding a Vahan Saathi",
+  "findingSaathiSub": "Looking for available vehicles near you...",
+  "haulConfirmed": "HAUL CONFIRMED",
+  "callSaathi": "CALL SAATHI",
+  "whatsappSaathi": "WHATSAPP",
+  "editLabel": "Edit"
 }

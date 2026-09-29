@@ -11,43 +11,64 @@ import 'steps/duration_step.dart';
 import 'steps/location_step.dart';
 import 'steps/review_step.dart';
 import 'waiting_screen.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-class RequestFlowScreen extends ConsumerWidget {
+class RequestFlowScreen extends ConsumerStatefulWidget {
   const RequestFlowScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RequestFlowScreen> createState() => _RequestFlowScreenState();
+}
+
+class _RequestFlowScreenState extends ConsumerState<RequestFlowScreen> {
+  late PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    final initialState = ref.read(requestFormControllerProvider);
+    _pageController = PageController(initialPage: initialState.currentStep);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(requestFormControllerProvider);
     final controller = ref.read(requestFormControllerProvider.notifier);
+    final l10n = AppLocalizations.of(context)!;
 
-    // Navigate to waiting screen if submitted
-    if (state.isSuccess && state.createdRequestId != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+    ref.listen(requestFormControllerProvider.select((state) => state.currentStep), (previous, next) {
+      if (previous != next && _pageController.hasClients) {
+        _pageController.animateToPage(
+          next,
+          duration: GhTokens.animSlow,
+          curve: GhTokens.curveEaseInOut,
+        );
+      }
+    });
+
+    ref.listen(requestFormControllerProvider.select((state) => state.isSuccess), (previous, next) {
+      if (next && state.createdRequestId != null) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) => WaitingScreen(requestId: state.createdRequestId!),
           ),
         );
-      });
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
+      }
+    });
 
     final steps = [
       const VehicleStep(),
       const WorkStep(),
+      const LocationStep(),
       const TimingStep(),
       const DurationStep(),
-      const LocationStep(),
       const ReviewStep(),
-    ];
-    
-    final stepTitles = [
-      'Select Vehicle',
-      'Select Work Type',
-      'Timing',
-      'Duration',
-      'Location',
-      'Review & Submit',
     ];
 
     return Scaffold(
@@ -55,7 +76,11 @@ class RequestFlowScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: CustomerColors.surface,
         elevation: 0,
-        title: Text(stepTitles[state.currentStep], style: CustomerTextStyles.titleLg),
+        title: Text(
+          '0${state.currentStep + 1} / 0${steps.length}', 
+          style: CustomerTextStyles.labelLg.copyWith(color: CustomerColors.onSurfaceVariant)
+        ),
+        centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: CustomerColors.onSurface),
           onPressed: () {
@@ -68,27 +93,29 @@ class RequestFlowScreen extends ConsumerWidget {
           },
         ),
       ),
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              // Stepper Progress Bar
-              LinearProgressIndicator(
-                value: (state.currentStep + 1) / steps.length,
-                backgroundColor: CustomerColors.surfaceContainer,
-                color: CustomerColors.primaryContainer,
-                minHeight: 4,
-              ),
-              Expanded(
-                child: Padding(
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                LinearProgressIndicator(
+                  value: (state.currentStep + 1) / steps.length,
+                  backgroundColor: CustomerColors.surfaceContainer,
+                  color: CustomerColors.primaryContainer,
+                  minHeight: 2,
+                ),
+                Expanded(
+                  child: PageView(
+                    controller: _pageController,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: steps,
+                  ),
+                ),
+                Padding(
                   padding: const EdgeInsets.all(GhTokens.spaceLg),
                   child: Column(
                     children: [
-                      Expanded(
-                        child: steps[state.currentStep],
-                      ),
                       if (state.errorMessage != null) ...[
-                        const SizedBox(height: GhTokens.spaceMd),
                         Container(
                           padding: const EdgeInsets.all(GhTokens.spaceSm),
                           decoration: BoxDecoration(
@@ -101,10 +128,10 @@ class RequestFlowScreen extends ConsumerWidget {
                             textAlign: TextAlign.center,
                           ),
                         ),
+                        const SizedBox(height: GhTokens.spaceMd),
                       ],
-                      const SizedBox(height: GhTokens.spaceLg),
                       GhHighlightButton(
-                        label: state.currentStep == steps.length - 1 ? 'SUBMIT REQUEST' : 'CONTINUE',
+                        label: state.currentStep == steps.length - 1 ? l10n.actionFindVehicle : l10n.actionContinue,
                         onPressed: state.isSubmitting 
                             ? null 
                             : () {
@@ -119,17 +146,17 @@ class RequestFlowScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
-              ),
-            ],
-          ),
-          if (state.isSubmitting)
-            Container(
-              color: Colors.black45,
-              child: const Center(
-                child: CircularProgressIndicator(color: CustomerColors.primaryContainer),
-              ),
+              ],
             ),
-        ],
+            if (state.isSubmitting)
+              Container(
+                color: Colors.black45,
+                child: const Center(
+                  child: CircularProgressIndicator(color: CustomerColors.primaryContainer),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
