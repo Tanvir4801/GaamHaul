@@ -1,0 +1,165 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      // Assumes we store role='admin' in users/{uid}
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    function isNotBanned() {
+      let user = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      return user == null || user.data.banned != true;
+    }
+
+    // Check if a field was modified
+    function fieldUnchanged(field) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny([field]);
+    }
+
+    // Check if a field is omitted during creation or matches expected value
+    function isValidInitialValue(field, expected) {
+      return !request.resource.data.keys().hasAny([field]) || request.resource.data[field] == expected;
+    }
+
+    function isCreatingValidRequest() {
+      let data = request.resource.data;
+      return data.customerId == request.auth.uid 
+          && data.status == 'open'
+          && (!('selectedSaathiId' in data) || data.selectedSaathiId == null)
+          && (!('shortlistedVehicleIds' in data) || data.shortlistedVehicleIds.size() == 0)
+          && (!('shortlistedSaathiIds' in data) || data.shortlistedSaathiIds.size() == 0)
+          && (!('interestedSaathis' in data) || data.interestedSaathis.size() == 0)
+          && (!('finalPrice' in data) || data.finalPrice == null)
+          && (!('matchedAt' in data) || data.matchedAt == null)
+          && (!('completedAt' in data) || data.completedAt == null);
+    }
+
+    // users
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      
+      // Allow user to create their own profile during onboarding
+      allow create: if isOwner(userId) 
+                    && request.resource.data.role in ['customer', 'vahan_saathi'] // cannot be admin
+                    && (!('banned' in request.resource.data) || request.resource.data.banned == false);
+
+      // Allow updates to safe fields
+      allow update: if isOwner(userId) 
+                    && isNotBanned()
+                    && fieldUnchanged('role')
+                    && fieldUnchanged('banned')
+                    && fieldUnchanged('createdAt');
+
+      allow delete: if false; // Deny deletes
+    }
+
+    // devices (FCM tokens)
+    match /users/{userId}/devices/{deviceId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // vahan_saathis
+    match /vahan_saathis/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+
+      // Only saathi can create their profile
+      allow create: if isOwner(userId) 
+                    && isNotBanned()
+                    && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "vahan_saathi"
+                    && isValidInitialValue('rating_avg', 0)
+                    && isValidInitialValue('rating_count', 0)
+                    && isValidInitialValue('verificationStatus', 'pending');
+
+      // Update protected fields restriction
+      allow update: if isOwner(userId)
+                    && isNotBanned()
+                    && fieldUnchanged('rating_avg')
+                    && fieldUnchanged('rating_count')
+                    && fieldUnchanged('verificationStatus');
+
+      allow delete: if false;
+    }
+
+    // vehicles
+    match /vehicles/{vehicleId} {
+      allow read: if isOwner(resource.data.ownerId) || isAdmin();
+      
+      allow create: if isOwner(request.resource.data.ownerId)
+                    && isNotBanned()
+                    && request.resource.data.type in ['e_loader', 'pickup', 'tempo', 'mini_truck', 'tractor']
+                    && request.resource.data.status in ['on_duty', 'off_duty', 'busy'];
+
+      allow update: if isOwner(resource.data.ownerId)
+                    && isOwner(request.resource.data.ownerId) // Owner ID cannot change
+                    && isNotBanned()
+                    && request.resource.data.status in ['on_duty', 'off_duty', 'busy'];
+
+      // Product spec says restrict delete if implemented, let's allow for owner, since it might be needed.
+      // Wait, "If no delete flow exists: DENY delete". I will deny to be safe.
+      allow delete: if false;
+    }
+
+    // requests
+    match /requests/{requestId} {
+      // Customer can read own request. Saathi can read if shortlisted. Admin can read all.
+      allow read: if isOwner(resource.data.customerId) 
+                  || (isSignedIn() && request.auth.uid in resource.data.shortlistedSaathiIds)
+                  || isAdmin();
+
+      allow create: if isOwner(request.resource.data.customerId)
+                    && isNotBanned()
+                    && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "customer"
+                    && isCreatingValidRequest();
+
+      // Updates restricted: Client cannot change server-owned fields
+      allow update: if (isOwner(resource.data.customerId))
+                    && isOwner(request.resource.data.customerId)
+                    && isNotBanned()
+                    && fieldUnchanged('shortlistedVehicleIds')
+                    && fieldUnchanged('shortlistedSaathiIds')
+                    && fieldUnchanged('interestedSaathis')
+                    && fieldUnchanged('selectedSaathiId')
+                    && fieldUnchanged('matchedAt')
+                    && fieldUnchanged('completedAt')
+                    && fieldUnchanged('finalPrice')
+                    && fieldUnchanged('status'); // Status transitions are server-authoritative!
+
+      allow delete: if false; // Requests should not be deleted by clients
+    }
+
+    // ratings
+    match /ratings/{ratingId} {
+      allow read: if isSignedIn() 
+                  && (request.auth.uid == resource.data.fromUserId || request.auth.uid == resource.data.toUserId)
+                  || isAdmin();
+      
+      // Ratings are created via Cloud Callable `submitRating` exclusively.
+      allow create, update, delete: if false; 
+    }
+
+    // rate_cards
+    match /rate_cards/{vehicleType} {
+      // Public authenticated read
+      allow read: if isSignedIn();
+      
+      // Admin backend writes only
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Default Deny Everything Else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

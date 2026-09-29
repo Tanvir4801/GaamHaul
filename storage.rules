@@ -1,0 +1,38 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Assumes we store role='admin' in Firestore.
+    // Note: Storage Rules can now access Firestore!
+    function isAdmin() {
+      return isSignedIn() && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    function isValidImage() {
+      return request.resource.contentType.matches('image/.*') 
+             && request.resource.size < 5 * 1024 * 1024; // 5 MB max
+    }
+
+    match /vehicles/{ownerId}/{vehicleId}/{fileName} {
+      // Allow read if owner or Admin
+      allow read: if isOwner(ownerId) || isAdmin();
+      
+      // Allow write if owner and valid image
+      // Assuming only 'vehicle.jpg' or 'rc.jpg' or similar files
+      allow write: if isOwner(ownerId) && isValidImage();
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

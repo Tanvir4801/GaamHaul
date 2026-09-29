@@ -1,0 +1,26 @@
+{
+  "appTitle": "GAAMHAUL",
+  "@appTitle": {
+    "description": "The main brand name of the application"
+  },
+  "customerAppSubtitle": "વાહન સાથી",
+  "@customerAppSubtitle": {
+    "description": "Subtitle shown alongside the brand name"
+  },
+  "logout": "Logout",
+  "@logout": {
+    "description": "Text for the logout button"
+  },
+  "language": "Language",
+  "@language": {
+    "description": "Label for the language selection setting"
+  },
+  "english": "English",
+  "@english": {
+    "description": "The name of the English language"
+  },
+  "gujarati": "ગુજરાતી",
+  "@gujarati": {
+    "description": "The name of the Gujarati language"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "209674836764",
+    "project_id": "gaamhaul",
+    "storage_bucket": "gaamhaul.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:209674836764:android:11c35158acfaa953ed78d9",
+        "android_client_info": {
+          "package_name": "com.gaamhaul.customer_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBpA-lSoGYgaHDOGaCnrYaNHgkWBVSokJo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
